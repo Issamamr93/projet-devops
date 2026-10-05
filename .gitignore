@@ -1,6 +1,9 @@
 # Dépendances Node.js (pour le futur back-end)
 node_modules/
 
+# Données locales du back-end (générées automatiquement)
+backend/data/
+
 # Variables d'environnement (mots de passe, clés...)
 .env
 

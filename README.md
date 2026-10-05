@@ -1,53 +1,92 @@
 # Projet DevOps — Gestionnaire de tâches
 
-Application web simple de gestion de tâches (to-do list), réalisée dans le cadre de la Licence 3.
+Application web de gestion de tâches (to-do list), réalisée dans le cadre de la Licence 3.
 
-## Étape 1 (actuelle) : Front-end seul
+- **Front-end** : HTML / CSS / JavaScript (sans framework)
+- **Back-end** : Node.js + Express (API REST)
+- **Stockage** : fichier JSON côté serveur (pas encore de base de données)
 
-- **HTML / CSS / JavaScript** (sans framework)
-- Les données sont stockées dans le navigateur (`localStorage`) — pas encore de base de données ni de back-end.
+## Lancer le projet
 
-### Fonctionnalités
-- Ajouter une tâche
-- Cocher / décocher une tâche comme terminée
-- Supprimer une tâche
+Prérequis : [Node.js](https://nodejs.org) (version 18 ou plus).
+
+```bash
+cd backend
+npm install      # installe Express (une seule fois)
+npm run dev      # démarre le serveur (redémarre tout seul à chaque modification)
+```
+
+Puis ouvrir **http://localhost:3000** dans le navigateur.
+
+> `npm start` lance le serveur sans le redémarrage automatique (mode "production").
+
+## Fonctionnalités
+- Ajouter, cocher / décocher, supprimer une tâche
 - Filtrer : toutes / à faire / terminées
 - Supprimer toutes les tâches terminées
-- Les tâches restent après un rechargement de la page
+- Les tâches sont enregistrées sur le serveur (`backend/data/tasks.json`)
 
-### Lancer le projet
-Ouvrir `frontend/index.html` dans un navigateur (double-clic suffit).
+## Architecture
 
-Ou, avec l'extension **Live Server** de VS Code : clic droit sur `index.html` → *Open with Live Server*.
+```
+ Navigateur                                   Serveur Node.js (port 3000)
+┌──────────────────────┐   HTTP + JSON   ┌───────────────────────────────────────┐
+│ app.js  (affichage)  │                 │ routes  → controller  → repository    │
+│   ↓                  │  fetch("/api")  │ (URL)     (validation)  (lecture /     │
+│ storage.js (données) │ ──────────────► │                          écriture JSON)│
+└──────────────────────┘ ◄────────────── └───────────────────────────────────────┘
+                                                              ↓
+                                                    backend/data/tasks.json
+```
 
 ## Structure
 
 ```
 Projet-DevOps/
 ├── README.md
-└── frontend/
-    ├── index.html       → structure de la page
-    ├── css/
-    │   └── style.css    → mise en forme
-    └── js/
-        ├── storage.js   → couche données (localStorage, puis API plus tard)
-        └── app.js       → logique de l'interface (affichage, événements)
+├── frontend/
+│   ├── index.html
+│   ├── css/style.css
+│   └── js/
+│       ├── storage.js        → appels à l'API avec fetch()
+│       └── app.js            → affichage et événements
+└── backend/
+    ├── package.json          → dépendances et scripts npm
+    ├── data/tasks.json       → les données (créé automatiquement, ignoré par Git)
+    └── src/
+        ├── server.js         → démarre le serveur
+        ├── app.js            → configuration d'Express (middlewares)
+        ├── routes/           → URL → fonction
+        ├── controllers/      → validation + codes HTTP
+        └── data/             → accès aux données (repository)
 ```
 
-### Pourquoi séparer `storage.js` et `app.js` ?
-C'est le principe de **séparation des responsabilités** :
-- `app.js` s'occupe de l'affichage et ne sait pas *où* sont les données.
-- `storage.js` est le seul fichier qui accède aux données.
+### Le principe : la séparation des responsabilités
+Chaque fichier a **un seul rôle**. Résultat : en passant de `localStorage` à l'API, seul `storage.js` a changé, et `app.js` est resté identique. De la même façon, quand on ajoutera une base de données, seul `tasks.repository.js` changera.
 
-Quand on ajoutera le back-end Node.js, il suffira de modifier `storage.js` pour qu'il utilise `fetch()` vers l'API. `app.js` ne changera pas.
+## API REST
 
-## Étape 2 (à venir) : Back-end Node.js
+| Méthode | Route            | Corps (JSON)                    | Réponse                     |
+|---------|------------------|---------------------------------|-----------------------------|
+| GET     | `/api/tasks`     | —                               | `200` liste des tâches      |
+| GET     | `/api/tasks/:id` | —                               | `200` la tâche / `404`      |
+| POST    | `/api/tasks`     | `{ "title": "..." }`            | `201` tâche créée / `400`   |
+| PUT     | `/api/tasks/:id` | `{ "title"?: "...", "done"?: true }` | `200` tâche modifiée / `400` / `404` |
+| DELETE  | `/api/tasks/:id` | —                               | `204` / `404`               |
 
-API REST prévue :
+### Tester l'API sans le front-end (avec curl)
 
-| Méthode | Route            | Action                  |
-|---------|------------------|-------------------------|
-| GET     | `/api/tasks`     | Lister les tâches       |
-| POST    | `/api/tasks`     | Créer une tâche         |
-| PUT     | `/api/tasks/:id` | Modifier une tâche      |
-| DELETE  | `/api/tasks/:id` | Supprimer une tâche     |
+```bash
+curl http://localhost:3000/api/tasks
+curl -X POST http://localhost:3000/api/tasks -H "Content-Type: application/json" -d "{\"title\":\"Ma tâche\"}"
+curl -X PUT http://localhost:3000/api/tasks/ID -H "Content-Type: application/json" -d "{\"done\":true}"
+curl -X DELETE http://localhost:3000/api/tasks/ID
+```
+
+On peut aussi utiliser **Postman** ou l'extension VS Code **REST Client**.
+
+## Prochaines étapes possibles
+- Base de données (SQLite, PostgreSQL ou MongoDB) → remplacer `tasks.repository.js`
+- Tests automatisés de l'API (Jest + Supertest)
+- Conteneurisation avec Docker
+- Intégration continue avec GitHub Actions

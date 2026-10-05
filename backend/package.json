@@ -1,0 +1,17 @@
+{
+  "name": "projet-devops-backend",
+  "version": "1.0.0",
+  "description": "API REST Node.js/Express du gestionnaire de tâches",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": [],
+  "author": "issam",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}

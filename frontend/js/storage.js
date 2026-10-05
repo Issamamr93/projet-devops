@@ -1,66 +1,66 @@
 /**
  * ===== COUCHE DONNÉES (storage.js) =====
  *
- * Ce fichier est le SEUL endroit qui sait OÙ sont stockées les tâches.
- * Pour l'instant : dans le navigateur (localStorage).
- * Plus tard : on remplacera le contenu de ces fonctions par des appels
- * fetch() vers le back-end Node.js, SANS toucher à app.js.
+ * Ce fichier est le SEUL endroit du front-end qui sait OÙ sont les tâches.
  *
- * Toutes les fonctions sont "async" (elles renvoient une Promise) même si
- * localStorage est synchrone. Pourquoi ? Parce qu'un appel réseau vers une
- * API est asynchrone : en préparant ça dès maintenant, la migration vers
- * le back-end sera transparente pour le reste du code.
+ * Étape 1 : elles étaient dans le navigateur (localStorage).
+ * Étape 2 (maintenant) : elles sont sur le serveur Node.js, et on les
+ * manipule via l'API REST avec fetch().
+ *
+ * Les fonctions gardent exactement les mêmes noms et renvoient les mêmes
+ * données qu'avant : app.js n'a donc pas eu besoin d'être modifié.
  *
  * Format d'une tâche :
- *   { id: "1696500000000", title: "Réviser le cours", done: false, createdAt: "2026-10-05T..." }
+ *   { id: "a1b2c3...", title: "Réviser le cours", done: false, createdAt: "2026-10-05T..." }
  */
 
-const STORAGE_KEY = "tasks";
+// URL relative : le front est servi par le même serveur que l'API
+const API_URL = "/api/tasks";
 
-// Lit le tableau de tâches depuis localStorage (ou un tableau vide)
-function readTasks() {
-  const json = localStorage.getItem(STORAGE_KEY);
-  return json ? JSON.parse(json) : [];
-}
+// Fonction utilitaire : envoie une requête à l'API et gère les erreurs
+async function request(url, options = {}) {
+  const response = await fetch(url, {
+    headers: { "Content-Type": "application/json" },
+    ...options,
+  });
 
-// Enregistre le tableau de tâches dans localStorage
-function writeTasks(tasks) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  // response.ok est vrai pour les codes 200 à 299
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const message = body.error || `Erreur HTTP ${response.status}`;
+    alert(message);
+    throw new Error(message);
+  }
+
+  // 204 No Content : pas de corps à lire
+  if (response.status === 204) return null;
+  return response.json();
 }
 
 const TaskService = {
-  // Récupérer toutes les tâches       → futur : GET    /api/tasks
+  // Récupérer toutes les tâches
   async getAll() {
-    return readTasks();
+    return request(API_URL);
   },
 
-  // Créer une tâche                     → futur : POST   /api/tasks
+  // Créer une tâche
   async create(title) {
-    const tasks = readTasks();
-    const newTask = {
-      id: Date.now().toString(),
-      title: title,
-      done: false,
-      createdAt: new Date().toISOString(),
-    };
-    tasks.push(newTask);
-    writeTasks(tasks);
-    return newTask;
+    return request(API_URL, {
+      method: "POST",
+      body: JSON.stringify({ title }),
+    });
   },
 
-  // Modifier une tâche (ex: done=true)  → futur : PUT    /api/tasks/:id
+  // Modifier une tâche (ex: { done: true })
   async update(id, changes) {
-    const tasks = readTasks();
-    const task = tasks.find((t) => t.id === id);
-    if (!task) throw new Error("Tâche introuvable");
-    Object.assign(task, changes);
-    writeTasks(tasks);
-    return task;
+    return request(`${API_URL}/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(changes),
+    });
   },
 
-  // Supprimer une tâche                 → futur : DELETE /api/tasks/:id
+  // Supprimer une tâche
   async remove(id) {
-    const tasks = readTasks().filter((t) => t.id !== id);
-    writeTasks(tasks);
+    return request(`${API_URL}/${id}`, { method: "DELETE" });
   },
 };
