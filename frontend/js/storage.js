@@ -14,8 +14,8 @@
  *   { id: "a1b2c3...", title: "Réviser le cours", done: false, createdAt: "2026-10-05T..." }
  */
 
-// URL relative : le front est servi par le même serveur que l'API
-const API_URL = "/api/tasks";
+// API_BASE_URL est défini dans config.js (selon l'environnement)
+const API_URL = `${API_BASE_URL}/api/tasks`;
 
 // Fonction utilitaire : envoie une requête à l'API et gère les erreurs
 async function request(url, options = {}) {

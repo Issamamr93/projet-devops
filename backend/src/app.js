@@ -5,12 +5,15 @@
  * les unes après les autres pour chaque requête, dans l'ordre où on
  * les déclare avec app.use().
  *
- *   Requête → express.json() → logger → routes → 404 → gestion d'erreurs → Réponse
+ *   Requête → express.json() → logger → CORS → routes → 404 → gestion d'erreurs → Réponse
+ *
+ * Le back-end est un projet indépendant : il ne sert QUE l'API.
+ * Le front-end est servi ailleurs (Nginx dans Docker, Live Server en dev).
  */
 
-const path = require("path");
 const express = require("express");
 const tasksRoutes = require("./routes/tasks.routes");
+const cors = require("./middlewares/cors");
 
 const app = express();
 
@@ -23,19 +26,23 @@ app.use((req, res, next) => {
   next(); // passe au middleware suivant
 });
 
-// 3. Les routes de l'API
+// 3. Autorise le front-end (sur une autre origine) à appeler l'API
+app.use(cors);
+
+// 4. Page d'accueil de l'API : utile pour vérifier qu'elle tourne
+app.get("/", (req, res) => {
+  res.json({ name: "API Gestionnaire de tâches", routes: ["/api/tasks"] });
+});
+
+// 5. Les routes de l'API
 app.use("/api/tasks", tasksRoutes);
 
-// 4. Sert le front-end (fichiers HTML/CSS/JS) sur la même adresse.
-//    Avantage : front et API ont la même origine → pas de problème de CORS.
-app.use(express.static(path.join(__dirname, "..", "..", "frontend")));
-
-// 5. Route inconnue → erreur 404
+// 6. Route inconnue → erreur 404
 app.use((req, res) => {
   res.status(404).json({ error: "Route introuvable" });
 });
 
-// 6. Gestion centralisée des erreurs (reconnue par Express grâce à ses 4 paramètres).
+// 7. Gestion centralisée des erreurs (reconnue par Express grâce à ses 4 paramètres).
 //    Avec Express 5, une erreur levée dans une fonction async arrive ici automatiquement.
 app.use((err, req, res, next) => {
   console.error("❌", err);

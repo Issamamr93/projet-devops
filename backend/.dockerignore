@@ -1,0 +1,8 @@
+# Fichiers à NE PAS envoyer à Docker lors du build
+node_modules
+data
+.env
+Dockerfile
+.dockerignore
+.gitignore
+*.md

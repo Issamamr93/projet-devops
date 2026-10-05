@@ -1,0 +1,4 @@
+# Fichiers à NE PAS envoyer à Docker lors du build
+Dockerfile
+.dockerignore
+*.md

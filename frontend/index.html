@@ -47,9 +47,11 @@
 
   <!--
     L'ordre est important :
-    1. storage.js définit l'objet "TaskService" (la couche données)
-    2. app.js l'utilise pour gérer l'interface
+    1. config.js définit l'adresse de l'API
+    2. storage.js définit l'objet "TaskService" (la couche données)
+    3. app.js l'utilise pour gérer l'interface
   -->
+  <script src="js/config.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/app.js"></script>
 </body>

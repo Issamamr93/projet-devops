@@ -1,0 +1,8 @@
+# Dépendances (réinstallées avec "npm install")
+node_modules/
+
+# Ancien stockage en fichier JSON (remplacé par PostgreSQL)
+data/
+
+# Variables d'environnement (mots de passe, clés...)
+.env
