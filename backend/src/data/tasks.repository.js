@@ -2,75 +2,66 @@
  * ===== REPOSITORY (tasks.repository.js) =====
  *
  * Le SEUL fichier du back-end qui sait où sont stockées les tâches.
- * Pour l'instant : dans un fichier JSON (backend/data/tasks.json).
- * Plus tard : on remplacera ces fonctions par des requêtes vers une
- * vraie base de données, SANS toucher au contrôleur ni aux routes.
+ * Avant : un fichier JSON. Maintenant : une base de données PostgreSQL.
+ * Les fonctions ont gardé les mêmes noms et renvoient les mêmes données :
+ * le contrôleur et les routes n'ont pas changé.
  *
- * (C'est exactement la même idée que storage.js côté front-end.)
+ * Sécurité : les valeurs sont toujours passées en paramètres ($1, $2...)
+ * et JAMAIS concaténées dans la requête SQL. PostgreSQL les traite comme
+ * des données, ce qui empêche les injections SQL.
  */
 
-const fs = require("fs/promises");
-const path = require("path");
-const crypto = require("crypto");
+const pool = require("./db");
 
-const DATA_FILE = path.join(__dirname, "..", "..", "data", "tasks.json");
+// Colonnes renvoyées à l'API ("created_at" en SQL → "createdAt" en JSON)
+const COLUMNS = `id, title, done, created_at AS "createdAt"`;
 
-// Lit toutes les tâches depuis le fichier (tableau vide si le fichier n'existe pas encore)
-async function readTasks() {
-  try {
-    const json = await fs.readFile(DATA_FILE, "utf-8");
-    return JSON.parse(json);
-  } catch (err) {
-    if (err.code === "ENOENT") return []; // ENOENT = fichier inexistant
-    throw err;
-  }
-}
-
-// Écrit toutes les tâches dans le fichier (crée le dossier si besoin)
-async function writeTasks(tasks) {
-  await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify(tasks, null, 2));
+// L'id arrive de l'URL sous forme de texte : on vérifie que c'est un entier
+// (sinon PostgreSQL renverrait une erreur au lieu d'un simple "introuvable")
+function toId(id) {
+  const number = Number(id);
+  return Number.isInteger(number) && number > 0 ? number : null;
 }
 
 async function findAll() {
-  return readTasks();
+  const result = await pool.query(`SELECT ${COLUMNS} FROM tasks ORDER BY id`);
+  return result.rows;
 }
 
 async function findById(id) {
-  const tasks = await readTasks();
-  return tasks.find((t) => t.id === id) ?? null;
+  if (!toId(id)) return null;
+  const result = await pool.query(`SELECT ${COLUMNS} FROM tasks WHERE id = $1`, [toId(id)]);
+  return result.rows[0] ?? null;
 }
 
 async function create(title) {
-  const tasks = await readTasks();
-  const task = {
-    id: crypto.randomUUID(), // identifiant unique généré par le serveur
-    title,
-    done: false,
-    createdAt: new Date().toISOString(),
-  };
-  tasks.push(task);
-  await writeTasks(tasks);
-  return task;
+  const result = await pool.query(
+    `INSERT INTO tasks (title) VALUES ($1) RETURNING ${COLUMNS}`,
+    [title]
+  );
+  return result.rows[0];
 }
 
-// Renvoie la tâche modifiée, ou null si elle n'existe pas
+// Renvoie la tâche modifiée, ou null si elle n'existe pas.
+// COALESCE($1, title) : si la nouvelle valeur est NULL, on garde l'ancienne.
 async function update(id, changes) {
-  const tasks = await readTasks();
-  const task = tasks.find((t) => t.id === id);
-  if (!task) return null;
-  Object.assign(task, changes);
-  await writeTasks(tasks);
-  return task;
+  if (!toId(id)) return null;
+  const result = await pool.query(
+    `UPDATE tasks
+        SET title = COALESCE($1, title),
+            done  = COALESCE($2, done)
+      WHERE id = $3
+      RETURNING ${COLUMNS}`,
+    [changes.title ?? null, changes.done ?? null, toId(id)]
+  );
+  return result.rows[0] ?? null;
 }
 
 // Renvoie true si une tâche a été supprimée, false sinon
 async function remove(id) {
-  const tasks = await readTasks();
-  const remaining = tasks.filter((t) => t.id !== id);
-  if (remaining.length === tasks.length) return false;
-  await writeTasks(remaining);
-  return true;
+  if (!toId(id)) return false;
+  const result = await pool.query(`DELETE FROM tasks WHERE id = $1`, [toId(id)]);
+  return result.rowCount > 0;
 }
 
 module.exports = { findAll, findById, create, update, remove };

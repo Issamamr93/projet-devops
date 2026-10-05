@@ -1,0 +1,60 @@
+# ===== Docker Compose =====
+# Lance les TROIS services avec une seule commande :
+#   docker compose up -d --build
+#
+#   Navigateur ──► frontend (Nginx, :8080) ──/api──► backend (Node.js, :3000) ──► db (PostgreSQL)
+#
+# Les conteneurs sont sur le même réseau Docker : ils se joignent
+# simplement par leur nom de service ("backend", "db").
+
+services:
+  db:
+    image: postgres:17-alpine    # image officielle, pas besoin de Dockerfile
+    container_name: projet-devops-db
+    environment:
+      # Identifiants de DÉVELOPPEMENT uniquement (à changer en production)
+      - POSTGRES_USER=taches
+      - POSTGRES_PASSWORD=taches
+      - POSTGRES_DB=taches
+    ports:
+      - "5432:5432"              # pour le développement sans Docker et les outils (DBeaver...)
+    volumes:
+      - db-data:/var/lib/postgresql/data                      # les données de la base
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql  # création de la table
+    healthcheck:                 # "prêt" quand PostgreSQL accepte les connexions
+      test: ["CMD", "pg_isready", "-U", "taches", "-d", "taches"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    image: projet-devops-backend
+    container_name: projet-devops-backend
+    ports:
+      - "3000:3000"              # optionnel : permet d'appeler l'API directement
+    environment:
+      - PORT=3000
+      - DB_HOST=db               # le nom du service = l'adresse de la base
+      - DB_PORT=5432
+      - DB_USER=taches
+      - DB_PASSWORD=taches
+      - DB_NAME=taches
+    depends_on:
+      db:
+        condition: service_healthy   # attend que PostgreSQL soit prêt
+    init: true
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    image: projet-devops-frontend
+    container_name: projet-devops-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  db-data:

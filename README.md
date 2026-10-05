@@ -2,91 +2,79 @@
 
 Application web de gestion de tâches (to-do list), réalisée dans le cadre de la Licence 3.
 
-- **Front-end** : HTML / CSS / JavaScript (sans framework)
-- **Back-end** : Node.js + Express (API REST)
-- **Stockage** : fichier JSON côté serveur (pas encore de base de données)
+Le dépôt contient **deux projets indépendants** et une base de données :
 
-## Lancer le projet
+| Projet | Technologies | Rôle | Documentation |
+|---|---|---|---|
+| [`frontend/`](frontend/) | HTML, CSS, JavaScript, Nginx | Interface web | [frontend/README.md](frontend/README.md) |
+| [`backend/`](backend/) | Node.js, Express | API REST | [backend/README.md](backend/README.md) |
+| [`database/`](database/) | PostgreSQL 17 | Stockage des tâches (`init.sql` crée la table) | — |
 
-Prérequis : [Node.js](https://nodejs.org) (version 18 ou plus).
-
-```bash
-cd backend
-npm install      # installe Express (une seule fois)
-npm run dev      # démarre le serveur (redémarre tout seul à chaque modification)
-```
-
-Puis ouvrir **http://localhost:3000** dans le navigateur.
-
-> `npm start` lance le serveur sans le redémarrage automatique (mode "production").
-
-## Fonctionnalités
-- Ajouter, cocher / décocher, supprimer une tâche
-- Filtrer : toutes / à faire / terminées
-- Supprimer toutes les tâches terminées
-- Les tâches sont enregistrées sur le serveur (`backend/data/tasks.json`)
+Chacun a son propre `Dockerfile`, son propre README et peut être lancé seul.
 
 ## Architecture
 
 ```
- Navigateur                                   Serveur Node.js (port 3000)
-┌──────────────────────┐   HTTP + JSON   ┌───────────────────────────────────────┐
-│ app.js  (affichage)  │                 │ routes  → controller  → repository    │
-│   ↓                  │  fetch("/api")  │ (URL)     (validation)  (lecture /     │
-│ storage.js (données) │ ──────────────► │                          écriture JSON)│
-└──────────────────────┘ ◄────────────── └───────────────────────────────────────┘
-                                                              ↓
-                                                    backend/data/tasks.json
+                                     Docker
+          ┌─────────────────────────────────────────────────────────────────────────┐
+          │  frontend (Nginx)            backend (Node.js)        db (PostgreSQL)   │
+Navigateur│  ┌──────────────────┐ /api  ┌──────────────────┐ SQL ┌───────────────┐  │
+ :8080 ──►│  │ HTML / CSS / JS  │ ────► │ API REST Express │ ──► │ table "tasks" │  │
+          │  │ + reverse proxy  │ ◄──── │                  │ ◄── │               │  │
+          │  └──────────────────┘       └──────────────────┘     └───────┬───────┘  │
+          │                                                     volume "db-data"    │
+          └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-## Structure
+## Lancer le projet avec Docker
 
-```
-Projet-DevOps/
-├── README.md
-├── frontend/
-│   ├── index.html
-│   ├── css/style.css
-│   └── js/
-│       ├── storage.js        → appels à l'API avec fetch()
-│       └── app.js            → affichage et événements
-└── backend/
-    ├── package.json          → dépendances et scripts npm
-    ├── data/tasks.json       → les données (créé automatiquement, ignoré par Git)
-    └── src/
-        ├── server.js         → démarre le serveur
-        ├── app.js            → configuration d'Express (middlewares)
-        ├── routes/           → URL → fonction
-        ├── controllers/      → validation + codes HTTP
-        └── data/             → accès aux données (repository)
-```
-
-### Le principe : la séparation des responsabilités
-Chaque fichier a **un seul rôle**. Résultat : en passant de `localStorage` à l'API, seul `storage.js` a changé, et `app.js` est resté identique. De la même façon, quand on ajoutera une base de données, seul `tasks.repository.js` changera.
-
-## API REST
-
-| Méthode | Route            | Corps (JSON)                    | Réponse                     |
-|---------|------------------|---------------------------------|-----------------------------|
-| GET     | `/api/tasks`     | —                               | `200` liste des tâches      |
-| GET     | `/api/tasks/:id` | —                               | `200` la tâche / `404`      |
-| POST    | `/api/tasks`     | `{ "title": "..." }`            | `201` tâche créée / `400`   |
-| PUT     | `/api/tasks/:id` | `{ "title"?: "...", "done"?: true }` | `200` tâche modifiée / `400` / `404` |
-| DELETE  | `/api/tasks/:id` | —                               | `204` / `404`               |
-
-### Tester l'API sans le front-end (avec curl)
+Prérequis : [Docker Desktop](https://www.docker.com/products/docker-desktop/) installé et démarré.
 
 ```bash
-curl http://localhost:3000/api/tasks
-curl -X POST http://localhost:3000/api/tasks -H "Content-Type: application/json" -d "{\"title\":\"Ma tâche\"}"
-curl -X PUT http://localhost:3000/api/tasks/ID -H "Content-Type: application/json" -d "{\"done\":true}"
-curl -X DELETE http://localhost:3000/api/tasks/ID
+docker compose up -d --build
 ```
 
-On peut aussi utiliser **Postman** ou l'extension VS Code **REST Client**.
+- Application : **http://localhost:8080**
+- API (accès direct) : http://localhost:3000/api/tasks
+- PostgreSQL : `localhost:5432` (utilisateur, mot de passe et base : `taches`, valeurs de développement)
+
+| Commande | Effet |
+|---|---|
+| `docker compose ps` | État des conteneurs (doivent être `Up`) |
+| `docker compose logs -f` | Logs de tous les conteneurs en direct |
+| `docker compose logs -f backend` | Logs d'un seul conteneur |
+| `docker compose down` | Arrêter et supprimer les conteneurs (les tâches sont conservées) |
+| `docker compose down -v` | Idem, **en supprimant aussi les données** (volume) |
+| `docker compose exec db psql -U taches -d taches` | Ouvrir une console SQL dans la base (`\q` pour quitter) |
+
+## Lancer sans Docker (développement)
+
+Le back-end a besoin de PostgreSQL : le plus simple est de lancer uniquement la base avec Docker :
+
+```bash
+docker compose up -d db
+```
+
+Puis, dans deux terminaux :
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+```bash
+cd frontend
+python -m http.server 5500
+```
+
+Puis ouvrir **http://localhost:5500**. Le front (port 5500) et l'API (port 3000) ont deux origines différentes : c'est le middleware **CORS** du back-end qui autorise ces appels.
+
+## Le principe : la séparation des responsabilités
+- Côté front, seul `storage.js` sait comment joindre les données : en passant de `localStorage` à l'API, `app.js` n'a pas changé.
+- Côté back, seul `tasks.repository.js` sait où sont stockées les tâches : en passant du fichier JSON à PostgreSQL, seul ce fichier a changé (et `db.js` a été ajouté).
+- Front et back sont deux projets séparés qui ne communiquent que par HTTP : on peut modifier, déployer ou remplacer l'un sans toucher à l'autre.
 
 ## Prochaines étapes possibles
-- Base de données (SQLite, PostgreSQL ou MongoDB) → remplacer `tasks.repository.js`
 - Tests automatisés de l'API (Jest + Supertest)
-- Conteneurisation avec Docker
 - Intégration continue avec GitHub Actions
