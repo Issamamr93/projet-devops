@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestionnaire de tâches</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="container">
+    <header>
+      <h1>📝 Mes tâches</h1>
+      <p class="subtitle">Projet DevOps — Licence 3</p>
+    </header>
+
+    <!-- Formulaire d'ajout d'une tâche -->
+    <form id="task-form" class="task-form">
+      <input
+        type="text"
+        id="task-input"
+        placeholder="Ajouter une nouvelle tâche..."
+        maxlength="100"
+        autocomplete="off"
+        required
+      >
+      <button type="submit">Ajouter</button>
+    </form>
+
+    <!-- Filtres -->
+    <nav class="filters">
+      <button class="filter active" data-filter="all">Toutes</button>
+      <button class="filter" data-filter="active">À faire</button>
+      <button class="filter" data-filter="done">Terminées</button>
+    </nav>
+
+    <!-- Liste des tâches (remplie par JavaScript) -->
+    <ul id="task-list" class="task-list"></ul>
+
+    <!-- Message affiché quand la liste est vide -->
+    <p id="empty-message" class="empty-message">Aucune tâche pour le moment 🎉</p>
+
+    <footer class="task-footer">
+      <span id="task-counter">0 tâche restante</span>
+      <button id="clear-done" class="link-button">Supprimer les terminées</button>
+    </footer>
+  </main>
+
+  <!--
+    L'ordre est important :
+    1. storage.js définit l'objet "TaskService" (la couche données)
+    2. app.js l'utilise pour gérer l'interface
+  -->
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

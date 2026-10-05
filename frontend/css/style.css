@@ -1,0 +1,204 @@
+/* ===== Variables de couleurs ===== */
+:root {
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --danger: #ef4444;
+  --success: #10b981;
+}
+
+/* ===== Base ===== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 40px 16px;
+}
+
+.container {
+  width: 100%;
+  max-width: 560px;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  align-self: flex-start;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+h1 {
+  font-size: 1.8rem;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+/* ===== Formulaire ===== */
+.task-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.task-form input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.task-form input:focus {
+  border-color: var(--primary);
+}
+
+.task-form button {
+  padding: 12px 18px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.task-form button:hover {
+  background: var(--primary-hover);
+}
+
+/* ===== Filtres ===== */
+.filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filter {
+  flex: 1;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.filter.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+/* ===== Liste des tâches ===== */
+.task-list {
+  list-style: none;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.task-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--success);
+  cursor: pointer;
+}
+
+.task-item .task-title {
+  flex: 1;
+  word-break: break-word;
+}
+
+.task-item.done .task-title {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
+.task-item .delete-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.task-item:hover .delete-btn {
+  opacity: 1;
+}
+
+.task-item .delete-btn:hover {
+  color: var(--danger);
+}
+
+.empty-message {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px 0;
+  display: none;
+}
+
+/* ===== Pied de liste ===== */
+.task-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.link-button:hover {
+  color: var(--danger);
+  text-decoration: underline;
+}
+
+/* ===== Responsive (téléphone) ===== */
+@media (max-width: 480px) {
+  .container {
+    padding: 20px;
+  }
+
+  /* Sur mobile, pas de survol : on affiche toujours le bouton supprimer */
+  .task-item .delete-btn {
+    opacity: 1;
+  }
+}

@@ -1,0 +1,11 @@
+# Dépendances Node.js (pour le futur back-end)
+node_modules/
+
+# Variables d'environnement (mots de passe, clés...)
+.env
+
+# Fichiers système / éditeur
+.DS_Store
+Thumbs.db
+.vscode/
+.claude/settings.local.json
